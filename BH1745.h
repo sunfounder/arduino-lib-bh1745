@@ -54,6 +54,13 @@ class BH1745 {
     int GAIN_16X = 0x2;
     int RGBC_16_BIT = 16;
     int RGBC_8_BIT  =  8;
+    byte RED    = 0;
+    byte ORANGE = 1;
+    byte YELLOW = 2;
+    byte GREEN  = 3;
+    byte CYAN   = 4;
+    byte BLUE   = 5;
+    byte PURPLE = 6;
   
     #ifdef ESP32
     bool begin(int sda, int scl);
@@ -63,16 +70,23 @@ class BH1745 {
     void setGain(int gain);
     void setRgbcMode(int mode);
     void read();
+    byte readColor();
+    bool isDetectColor(byte color);
     long red = 0;
     long green = 0;
     long blue = 0;
     long clear = 0;
+    long hue = 0;
+    long saturation = 0;
+    long lightness = 0;
+    unsigned long rgb = 0;
     int rgbcMode = RGBC_8_BIT;
 
 
   private:
     void write8(uint8_t addr, uint8_t data);
     bool init();
+    void rgb2hsv();
 };
 
 #endif

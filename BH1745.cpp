@@ -109,16 +109,91 @@ void BH1745::read() {
   green = ((datas[3] << 8) + datas[2]) & 0xffff;
   blue = ((datas[5] << 8) + datas[4]) & 0xffff;
   clear = ((datas[7] << 8) + datas[6]) & 0xffff;
+  rgb = (red << 32) + (green << 16) + blue;
 
-  Serial.print("R: ");Serial.print(red, HEX);
-  Serial.print(" G: ");Serial.print(green, HEX);
-  Serial.print(" B: ");Serial.print(blue, HEX);
-  Serial.print(" C: ");Serial.println(clear, HEX);
   if (rgbcMode == RGBC_8_BIT){
     red = red * 255 / 65535;
     green = green * 255 / 65535;
     blue = blue * 255 / 65535;
     clear = clear * 255 / 65535;
+    rgb = (red << 16) + (green << 8) + blue;
+  }
+  rgb2hsv();
+}
+
+void BH1745::rgb2hsv(){
+  float r_, g_, b_;
+  if (rgbcMode == RGBC_8_BIT){
+    r_ = red / 255.0;
+    g_ = green / 255.0;
+    b_ = blue / 255.0;
+  } else {
+    r_ = red / 65535.0;
+    g_ = green / 65535.0;
+    b_ = blue / 65535.0;
+  }
+  float maxRG_ = max(r_, g_);
+  float max_ = max(maxRG_, b_);
+  float minRG_ = min(r_, g_);
+  float min_ = min(minRG_, b_);
+  float delta_ = max_ - min_;
+
+  // Serial.print("r_: ");Serial.print(r_);
+  // Serial.print(", g_: ");Serial.print(g_);
+  // Serial.print(", b_: ");Serial.println(b_);
+
+  if (delta_ == 0){
+    hue = 0;
+  } else if (max_ == r_) {
+    if (g_ >= b_){
+      hue = 60 * ((g_ - b_) / delta_ + 0);
+    }else {
+      hue = 60 * ((g_ - b_) / delta_ + 6);
+    }
+  } else if (max_ == g_) {
+    hue = 60 * ((b_ - r_) / delta_ + 2);
+  } else if (max_ == b_) {
+    hue = 60 * ((r_ - g_) / delta_ + 4);
+  }
+  lightness = (max_ + min_) / 2;
+  if (lightness == 0) {
+    saturation = 0;
+  } else if (lightness <= 0.5) {
+    saturation = delta_ / (2 * lightness);
+  } else {
+    saturation = delta_ / (2 - (2 * lightness));
+  }
+}
+
+byte BH1745::readColor() {
+  read();
+  // Serial.println(hue);
+
+  if (hue < 20) {  //change from 15, according to actual test
+    return RED;
+  } else if (hue < 45) {
+    return ORANGE;
+  } else if (hue < 90) {
+    return YELLOW;
+  } else if (hue < 150) {
+    return GREEN;
+  } else if (hue < 210) {
+    return CYAN;
+  } else if (hue < 270) {
+    return BLUE;
+  } else if (hue < 330) {
+    return PURPLE;
+  } else {
+    return RED;
+  }
+}
+
+bool BH1745::isDetectColor(byte color) {
+  byte c = readColor();
+  if (color == c){
+    return true;
+  } else {
+    return false;
   }
 }
 
